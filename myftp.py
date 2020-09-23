@@ -13,7 +13,7 @@ controlSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     print("Connecting to " + controlServerName + "...")
     controlSocket.connect((controlServerName, controlServerPort))
-    print(controlSocket.recv(1024))
+    resp = controlSocket.recv(1024)
 except socket.error:
     print("Could not connect to " + controlServerName)
     sys.exit()
@@ -28,6 +28,8 @@ replyCode = int(resp[0])
 if (replyCode != 2 and replyCode != 3):
     print("Username was unsuccessful")
     sys.exit()
+else:
+    print("Username successful")
 
 # Request Password
 password = raw_input("Password: ")
@@ -37,5 +39,50 @@ replyCode = int(resp[0])
 if (replyCode != 2):
     print("Password was unsuccessful")
     sys.exit()
+else:
+    print("Password successful\n")
+
+'''
+def pasvCommand():
+    controlSocket.send("PASV\r\n")
+    resp = controlSocket.recv(1024)
+'''  
+
+def lsCommand():
+    controlSocket.send("TYPE A\r\n")
+    resp = controlSocket.recv(1024)
+    if (int(resp[0]) != 2):
+        return False
+    return True
+    
+
+
+
+# FTP program
+while True:
+    command = raw_input("myftp> ")
+    if (command == "quit"):
+        print("Quitting ftp session...")
+        controlSocket.send("QUIT\r\n")
+        resp = controlSocket.recv(1024)
+        controlSocket.close()
+        break
+    elif (command == "ls"):
+        '''
+        controlSocket.send("TYPE A\r\n")
+        resp = controlSocket.recv(1024)
+        if (int(resp[0]) != 2):
+            print("ls command failed")
+            continue
+        else:
+            print("type a completed successfully")
+        '''
+        if(lsCommand()):
+            print("type a passed")
+        else:
+            print("type a failed")
+
+        
+
 
 controlSocket.close()
