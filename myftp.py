@@ -53,9 +53,10 @@ def pasvCommand():
     resp = controlSocket.recv(1024)
     if (int(resp[0]) != 2):
         return None, None
-    
+    resp = re.split("[()]", resp)
+
     # hostPort is [h1, h2, h3, h4, p1, p2]
-    hostPort = re.split("[()]", resp)[1].split(",")
+    hostPort = resp[1].split(",")
     host = ".".join(hostPort[:4])
     port = int(hostPort[4]) * 256 + int(hostPort[5]) 
     return host, port
@@ -68,11 +69,32 @@ def typeCommand(t):
     return True
 
 def lsCommand():
-    controlSocket.send("TYPE A\r\n")
-    resp = controlSocket.recv(1024)
-    if (int(resp[0]) != 2):
+    if (typeCommand("A") == False):
         return False
-    return True
+    
+    dataHost, dataPort = pasvCommand()
+    if (dataHost == None):
+        return False
+
+    controlSocket.send("LIST\r\n")
+    
+    dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        dataSocket.connect((dataHost, dataPort))
+    except socket.error:
+        return False
+
+    resp = controlSocket.recv(1024)
+
+    if (int(resp[0]) != 2 and int(resp[0]) != 1):
+        dataSocket.close()
+        return False
+
+    data = dataSocket.recv(4096)
+    resp = controlSocket.recv(1024)
+    print(resp)
+    print(data)
+    dataSocket.close()    
     
 
 
@@ -86,37 +108,9 @@ while True:
         resp = controlSocket.recv(1024)
         controlSocket.close()
         break
-    elif (command == "ls"):
-        
-        if (typeCommand("A") == False):
-            print("ls command failed")
-            continue
-        
-        dataHost, dataPort = pasvCommand()
-        if (dataHost == None):
-            print("Pasv failed")
-            continue
-
-        controlSocket.send("LIST\r\n")
-        
-        dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            dataSocket.connect((dataHost, dataPort))
-        except socket.error:
-            print("data socket connection failed")
-            continue
-
-        resp = controlSocket.recv(1024)
-
-        if (int(resp[0]) != 2 and int(resp[0]) != 1):
-            print("resp failed")
-            print(resp)
-            dataSocket.close()
-            continue
-
-        data = dataSocket.recv(4096)
-        print(data)
-        dataSocket.close()
+    elif (command == "ls"):   
+        if lsCommand() == False:
+            print("ls Command failed")
         
 
         
