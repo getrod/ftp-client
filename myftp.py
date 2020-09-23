@@ -212,6 +212,16 @@ while True:
 
         if putCommand(pathname) == False:
             print("put command failed")
+    elif (command[0:6] == "delete"):
+        pathname = command[7:]
+        if pathname == "":
+            print("Provide a path name")
+            continue
+        controlSocket.send("DELE %s\r\n" % pathname)
+        resp = controlSocket.recv(1024)
+        print resp[:-1]
+    else:
+        print("command \"%s\" not recognized" % command.split(" ")[0])
 
         
 
