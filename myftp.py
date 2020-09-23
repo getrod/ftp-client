@@ -1,6 +1,7 @@
 import sys
 import socket
 import re
+import os
 
 # Ensure user gives at least one argument
 if (len(sys.argv) - 1 < 1):
@@ -138,6 +139,45 @@ def getCommand(pathname):
     dataSocket.close
     print("Succesfully transfered %s (%d bytes) to local machine" % (fileName, numBytes))
 
+def putCommand(pathname):
+    # Open file and get file size
+    try:
+        numBytes = os.path.getsize(pathname)
+        localFile = open(pathname, "rb")
+    except:
+        return False
+
+    if typeCommand("I") == False:
+        return False
+
+    dataHost, dataPort = pasvCommand()
+    if dataHost == None:
+        return False
+
+    controlSocket.send("STOR %s\r\n" % pathname)
+
+    dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        dataSocket.connect((dataHost, dataPort))
+    except socket.error:
+        return False
+
+    resp = controlSocket.recv(1024)
+
+    if (int(resp[0]) != 2 and int(resp[0]) != 1):
+        dataSocket.close()
+        return False
+
+    dataSocket.send(localFile.read())
+    dataSocket.close()
+
+    resp = controlSocket.recv(1024)[:-1]
+    if(resp[0] != "2"):
+        return False
+    
+    print(resp)
+    print(str(numBytes) + " bytes transfered")
+
 # FTP program
 while True:
     command = raw_input("myftp> ")
@@ -164,6 +204,14 @@ while True:
             continue
         if getCommand(pathname) == False:
             print("get command failed")
+    elif (command[0:3] == "put"):
+        pathname = command[4:]
+        if pathname == "":
+            print("Provide a path name")
+            continue
+
+        if putCommand(pathname) == False:
+            print("put command failed")
 
         
 
