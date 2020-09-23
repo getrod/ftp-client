@@ -92,19 +92,51 @@ def lsCommand():
 
     data = dataSocket.recv(4096)
     resp = controlSocket.recv(1024)
-    print(resp)
-    print(data)
+    print(resp[:-1])
+    print(data[:-1])
     dataSocket.close()    
     
 def cdCommand(path):
-    if path == "":
-        print("Provide a path name")
-        return
-    
     controlSocket.send("CWD %s\r\n" % path)
     resp = controlSocket.recv(1024)
-    print(resp)
+    if (int(resp[0]) != 2):
+        return False
+    print(resp[:-1])
 
+def getCommand(pathname):
+    if typeCommand("I") == False:
+        return False
+
+    dataHost, dataPort = pasvCommand()
+    if dataHost == None:
+        return False
+
+    controlSocket.send("RETR %s\r\n" % pathname)
+    
+    dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        dataSocket.connect((dataHost, dataPort))
+    except socket.error:
+        return False
+
+    resp = controlSocket.recv(1024)
+
+    if (int(resp[0]) != 2 and int(resp[0]) != 1):
+        dataSocket.close()
+        return False
+    resp = re.split("[()]", resp)[1].split(" ")
+    numBytes = int(resp[0])
+
+    data = dataSocket.recv(numBytes)
+    resp = controlSocket.recv(1024)
+
+    # Save file in local directory
+    fileName = pathname.split("/")[-1]
+    localFile = open(fileName, "wb")
+    localFile.write(data)
+    localFile.close
+    dataSocket.close
+    print("Succesfully transfered %s (%d bytes) to local machine" % (fileName, numBytes))
 
 # FTP program
 while True:
@@ -117,10 +149,22 @@ while True:
         break
     elif (command == "ls"):   
         if lsCommand() == False:
-            print("ls Command failed")
-    elif (command[0:3] == "cd "):
+            print("ls command failed")
+    elif (command[0:2] == "cd"):
         path = command[3:]
-        cdCommand(path)
+        if path == "":
+            print("Provide a path name")
+            continue
+        if cdCommand(path) == False:
+            print("cd command failed")
+    elif (command[0:3] == "get"):
+        pathname = command[4:]
+        if pathname == "":
+            print("Provide a path name")
+            continue
+        if getCommand(pathname) == False:
+            print("get command failed")
+
         
 
         
