@@ -60,7 +60,12 @@ def pasvCommand():
     port = int(hostPort[4]) * 256 + int(hostPort[5]) 
     return host, port
 
-
+def typeCommand(t):
+    controlSocket.send("TYPE %s\r\n" % t)
+    resp = controlSocket.recv(1024)
+    if (int(resp[0]) != 2):
+        return False
+    return True
 
 def lsCommand():
     controlSocket.send("TYPE A\r\n")
@@ -82,16 +87,37 @@ while True:
         controlSocket.close()
         break
     elif (command == "ls"):
-        '''
-        controlSocket.send("TYPE A\r\n")
-        resp = controlSocket.recv(1024)
-        if (int(resp[0]) != 2):
+        
+        if (typeCommand("A") == False):
             print("ls command failed")
             continue
-        else:
-            print("type a completed successfully")
-        '''
-        pasvCommand()
+        
+        dataHost, dataPort = pasvCommand()
+        if (dataHost == None):
+            print("Pasv failed")
+            continue
+
+        controlSocket.send("LIST\r\n")
+        
+        dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            dataSocket.connect((dataHost, dataPort))
+        except socket.error:
+            print("data socket connection failed")
+            continue
+
+        resp = controlSocket.recv(1024)
+
+        if (int(resp[0]) != 2 and int(resp[0]) != 1):
+            print("resp failed")
+            print(resp)
+            dataSocket.close()
+            continue
+
+        data = dataSocket.recv(4096)
+        print(data)
+        dataSocket.close()
+        
 
         
 
