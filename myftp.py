@@ -1,5 +1,6 @@
 import sys
 import socket
+import re
 
 # Ensure user gives at least one argument
 if (len(sys.argv) - 1 < 1):
@@ -42,11 +43,24 @@ if (replyCode != 2):
 else:
     print("Password successful\n")
 
-'''
+
 def pasvCommand():
+    '''
+    Sends PASV command to ftp server and returns the host and port.
+    If PASV fails, the host and port is returned with a value None
+    '''
     controlSocket.send("PASV\r\n")
     resp = controlSocket.recv(1024)
-'''  
+    if (int(resp[0]) != 2):
+        return None, None
+    
+    # hostPort is [h1, h2, h3, h4, p1, p2]
+    hostPort = re.split("[()]", resp)[1].split(",")
+    host = ".".join(hostPort[:4])
+    port = int(hostPort[4]) * 256 + int(hostPort[5]) 
+    return host, port
+
+
 
 def lsCommand():
     controlSocket.send("TYPE A\r\n")
@@ -77,10 +91,7 @@ while True:
         else:
             print("type a completed successfully")
         '''
-        if(lsCommand()):
-            print("type a passed")
-        else:
-            print("type a failed")
+        pasvCommand()
 
         
 
