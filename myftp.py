@@ -137,7 +137,7 @@ def getCommand(pathname):
     localFile.write(data)
     localFile.close
     dataSocket.close
-    print("Succesfully transfered %s (%d bytes) to local machine" % (fileName, numBytes))
+    print("Succesfully transfered %s (%d bytes) to local machine." % (fileName, numBytes))
 
 def putCommand(pathname):
     # Open file and get file size
@@ -178,9 +178,16 @@ def putCommand(pathname):
     print(resp)
     print(str(numBytes) + " bytes transfered")
 
+def getPath(args):
+    if len(args) < 2 or args[1] == "":
+        print("Provide a path name.")
+        return None
+    return args[1]
+
 # FTP program
 while True:
-    command = raw_input("myftp> ")
+    args = raw_input("myftp> ").split(" ")
+    command = args[0]
     if (command == "quit"):
         print("Quitting ftp session...")
         controlSocket.send("QUIT\r\n")
@@ -188,44 +195,24 @@ while True:
         controlSocket.close()
         break
     elif (command == "ls"):   
-        if lsCommand() == False:
-            print("ls command failed")
-    elif (command[0:2] == "cd"):
-        path = command[3:]
-        if path == "":
-            print("Provide a path name")
-            continue
-        if cdCommand(path) == False:
-            print("cd command failed")
-    elif (command[0:3] == "get"):
-        pathname = command[4:]
-        if pathname == "":
-            print("Provide a path name")
-            continue
-        if getCommand(pathname) == False:
-            print("get command failed")
-    elif (command[0:3] == "put"):
-        pathname = command[4:]
-        if pathname == "":
-            print("Provide a path name")
-            continue
-
-        if putCommand(pathname) == False:
-            print("put command failed")
-    elif (command[0:6] == "delete"):
-        pathname = command[7:]
-        if pathname == "":
-            print("Provide a path name")
-            continue
-        controlSocket.send("DELE %s\r\n" % pathname)
+        if lsCommand() == False: print("List operation failed.")
+    elif (command == "cd"):
+        path = getPath(args)
+        if path == None: continue
+        if cdCommand(path) == False: print("Change directory failed.")
+    elif (command == "get"):
+        path = getPath(args)
+        if path == None: continue
+        if getCommand(path) == False: print("Get operation failed.")
+    elif (command == "put"):
+        path = getPath(args)
+        if path == None: continue
+        if putCommand(path) == False: print("Put operation failed.")
+    elif (command == "delete"):
+        path = getPath(args)
+        if path == None: continue
+        controlSocket.send("DELE %s\r\n" % path)
         resp = controlSocket.recv(1024)
         print resp[:-1]
-    else:
-        print("command \"%s\" not recognized" % command.split(" ")[0])
-
-        
-
-        
-
-
-controlSocket.close()
+    elif command != "":
+        print("Command \"%s\" not recognized" % command)
