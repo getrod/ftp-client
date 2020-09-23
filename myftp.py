@@ -96,7 +96,14 @@ def lsCommand():
     print(data)
     dataSocket.close()    
     
-
+def cdCommand(path):
+    if path == "":
+        print("Provide a path name")
+        return
+    
+    controlSocket.send("CWD %s\r\n" % path)
+    resp = controlSocket.recv(1024)
+    print(resp)
 
 
 # FTP program
@@ -111,6 +118,9 @@ while True:
     elif (command == "ls"):   
         if lsCommand() == False:
             print("ls Command failed")
+    elif (command[0:3] == "cd "):
+        path = command[3:]
+        cdCommand(path)
         
 
         
